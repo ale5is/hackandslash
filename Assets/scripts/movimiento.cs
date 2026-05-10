@@ -22,6 +22,7 @@ public class movimiento  : MonoBehaviour
     private float cooldownActual;
     private arma atacar;
 
+    [HideInInspector] public Transform objetivoLock;
     void Start()
     {
         controller = GetComponent<CharacterController>();
@@ -44,9 +45,48 @@ public class movimiento  : MonoBehaviour
 
         Vector3 input = new Vector3(horizontal, 0, vertical).normalized;
 
-        // Movimiento relativo a la cámara
-        if (input.magnitude >= 0.1f)
+        if (input.magnitude < 0.1f) return;
+
+        // ===== LOCK ON =====
+        if (objetivoLock != null)
         {
+            // Mirar enemigo
+            Vector3 direccionEnemigo =
+                objetivoLock.position - transform.position;
+
+            direccionEnemigo.y = 0;
+
+            transform.rotation = Quaternion.Slerp(
+                transform.rotation,
+                Quaternion.LookRotation(direccionEnemigo),
+                velocidadRotacion * Time.deltaTime
+            );
+
+            // Dirección desde cámara
+            Camera cam = Camera.main;
+
+            Vector3 camForward = cam.transform.forward;
+            Vector3 camRight = cam.transform.right;
+
+            camForward.y = 0;
+            camRight.y = 0;
+
+            camForward.Normalize();
+            camRight.Normalize();
+
+            // Movimiento relativo cámara
+            direccionMovimiento =
+                (camForward * vertical + camRight * horizontal).normalized;
+
+            // Mover personaje
+            controller.Move(
+                direccionMovimiento * velocidad * Time.deltaTime
+            );
+        }
+        else
+        {
+            // ===== MOVIMIENTO NORMAL =====
+
             Camera cam = Camera.main;
 
             Vector3 forward = cam.transform.forward;
@@ -58,12 +98,18 @@ public class movimiento  : MonoBehaviour
             forward.Normalize();
             right.Normalize();
 
-            direccionMovimiento = forward * vertical + right * horizontal;
+            direccionMovimiento =
+                forward * vertical + right * horizontal;
 
-            controller.Move(direccionMovimiento.normalized * velocidad * Time.deltaTime);
+            controller.Move(
+                direccionMovimiento.normalized *
+                velocidad *
+                Time.deltaTime
+            );
 
-            // Rotación hacia donde camina
-            Quaternion rotacionObjetivo = Quaternion.LookRotation(direccionMovimiento);
+            Quaternion rotacionObjetivo =
+                Quaternion.LookRotation(direccionMovimiento);
+
             transform.rotation = Quaternion.Slerp(
                 transform.rotation,
                 rotacionObjetivo,

@@ -162,6 +162,7 @@ MonoBehaviour:
   fuerzaDash: 20
   duracionDash: 0.2
   cooldownDash: 1
+  objetivoLock: {fileID: 0}
 --- !u!143 &209067788
 CharacterController:
   m_ObjectHideFlags: 0
@@ -310,7 +311,7 @@ GameObject:
   - component: {fileID: 377366674}
   m_Layer: 0
   m_Name: enemigo
-  m_TagString: Untagged
+  m_TagString: enemigo
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -648,6 +649,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   jugador: {fileID: 209067792}
+  tagEnemigo: enemigo
+  rangoBusqueda: 15
   offset: {x: 0, y: 6, z: -8}
   suavizado: 8
   sensibilidadMouse: 3
