@@ -20,10 +20,12 @@ public class movimiento  : MonoBehaviour
     private bool haciendoDash = false;
     private float tiempoDash;
     private float cooldownActual;
+    private arma atacar;
 
     void Start()
     {
         controller = GetComponent<CharacterController>();
+        atacar = GetComponent<arma>();
     }
 
     void Update()
@@ -83,25 +85,29 @@ public class movimiento  : MonoBehaviour
 
     void Dash()
     {
-        cooldownActual -= Time.deltaTime;
-
-        if (Input.GetKeyDown(KeyCode.Space) && cooldownActual <= 0)
+        if (!atacar.atacando)
         {
-            haciendoDash = true;
-            tiempoDash = duracionDash;
-            cooldownActual = cooldownDash;
-        }
+            cooldownActual -= Time.deltaTime;
 
-        if (haciendoDash)
-        {
-            controller.Move(transform.forward * fuerzaDash * Time.deltaTime);
-
-            tiempoDash -= Time.deltaTime;
-
-            if (tiempoDash <= 0)
+            if (Input.GetKeyDown(KeyCode.Space) && cooldownActual <= 0)
             {
-                haciendoDash = false;
+                haciendoDash = true;
+                tiempoDash = duracionDash;
+                cooldownActual = cooldownDash;
+            }
+
+            if (haciendoDash)
+            {
+                controller.Move(transform.forward * fuerzaDash * Time.deltaTime);
+
+                tiempoDash -= Time.deltaTime;
+
+                if (tiempoDash <= 0)
+                {
+                    haciendoDash = false;
+                }
             }
         }
+            
     }
 }

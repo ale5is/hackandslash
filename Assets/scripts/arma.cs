@@ -9,7 +9,7 @@ public class arma : MonoBehaviour
     [Header("Cooldown")]
     public float tiempoEntreAtaques = 0.5f;
 
-    private bool atacando = false;
+    public bool atacando = false;
     private bool regresando = false;
 
     private float progreso = 0f;

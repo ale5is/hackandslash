@@ -159,7 +159,7 @@ MonoBehaviour:
   velocidad: 6
   gravedad: -20
   velocidadRotacion: 10
-  fuerzaDash: 12
+  fuerzaDash: 20
   duracionDash: 0.2
   cooldownDash: 1
 --- !u!143 &209067788
@@ -292,6 +292,7 @@ MonoBehaviour:
   velocidadAtaque: 10
   anguloAtaque: 180
   tiempoEntreAtaques: 0.5
+  atacando: 0
   col: {fileID: 1902139263}
 --- !u!1 &377366668
 GameObject:
