@@ -8,6 +8,13 @@ public class EnemigoIa : MonoBehaviour
     public float speed = 3f;
     public float detectionRange = 10f;
 
+    [Header("Vida")]
+    public int vida = 3;
+
+    [Header("Drop")]
+    public GameObject orbeXpPrefab;
+    public int cantidadOrbes = 5;
+
     [Header("Knockback")]
     public float knockbackForce = 5f;
     public float knockbackTime = 0.2f;
@@ -48,15 +55,17 @@ public class EnemigoIa : MonoBehaviour
         {
             Vector3 direction = player.position - transform.position;
 
-            // evita mover en Y
             direction.y = 0f;
 
             direction.Normalize();
 
             transform.position += direction * speed * Time.deltaTime;
 
-            // mirar al jugador
-            transform.rotation = Quaternion.LookRotation(direction);
+            // mirar jugador
+            if (direction != Vector3.zero)
+            {
+                transform.rotation = Quaternion.LookRotation(direction);
+            }
         }
     }
 
@@ -66,15 +75,43 @@ public class EnemigoIa : MonoBehaviour
 
         if (hitCooldownTimer > 0f) return;
 
-        // dirección del golpe
-        knockDirection = (transform.position - other.transform.position).normalized;
+        // daño
+        vida--;
 
-        // evita movimiento vertical
+        // knockback
+        knockDirection = (transform.position - other.transform.position).normalized;
         knockDirection.y = 0f;
 
         isKnockedBack = true;
         knockbackTimer = knockbackTime;
 
         hitCooldownTimer = hitCooldown;
+
+        // morir
+        if (vida <= 0)
+        {
+            Morir();
+        }
+    }
+
+    void Morir()
+    {
+        // invoca orbes tipo minecraft
+        for (int i = 0; i < cantidadOrbes; i++)
+        {
+            Vector3 randomOffset = new Vector3(
+                Random.Range(-1f, 1f),
+                0.5f,
+                Random.Range(-1f, 1f)
+            );
+
+            Instantiate(
+                orbeXpPrefab,
+                transform.position + randomOffset,
+                Quaternion.identity
+            );
+        }
+
+        Destroy(gameObject);
     }
 }
