@@ -64,6 +64,16 @@ public class arma : MonoBehaviour
     public Collider col;
     public Renderer armaRenderer;
 
+    // =========================
+    // ZOOM ULTI
+    // =========================
+    [Header("Zoom Ulti")]
+    public float fovNormal = 60f;
+    public float fovUlti = 40f;
+    public float velocidadZoom = 10f;
+
+    private Camera cam;
+
     void Start()
     {
         controller =
@@ -88,6 +98,14 @@ public class arma : MonoBehaviour
 
         // TEXTO %
         porcentajeTexto.gameObject.SetActive(false);
+
+        // CÁMARA
+        cam = Camera.main;
+
+        if (cam != null)
+        {
+            cam.fieldOfView = fovNormal;
+        }
     }
 
     void Update()
@@ -236,6 +254,16 @@ public class arma : MonoBehaviour
         {
             tiempoCarga += Time.deltaTime;
 
+            // ZOOM MIENTRAS CARGA
+            if (cam != null)
+            {
+                cam.fieldOfView = Mathf.Lerp(
+                    cam.fieldOfView,
+                    fovUlti,
+                    velocidadZoom * Time.deltaTime
+                );
+            }
+
             // LIMITAR
             if (tiempoCarga > tiempoMaxCarga)
                 tiempoCarga = tiempoMaxCarga;
@@ -243,7 +271,7 @@ public class arma : MonoBehaviour
             // ACTUALIZAR SLIDER
             sliderUlti.value = tiempoCarga;
 
-            // PORCENTAJE SIN DECIMALES
+            // PORCENTAJE
             int porcentajeUI =
                 Mathf.RoundToInt(
                     (tiempoCarga / tiempoMaxCarga) * 100
@@ -251,6 +279,18 @@ public class arma : MonoBehaviour
 
             porcentajeTexto.text =
                 porcentajeUI + "%";
+        }
+        else
+        {
+            // VOLVER AL FOV NORMAL
+            if (cam != null)
+            {
+                cam.fieldOfView = Mathf.Lerp(
+                    cam.fieldOfView,
+                    fovNormal,
+                    velocidadZoom * Time.deltaTime
+                );
+            }
         }
 
         // SOLTAR BOTÓN
@@ -285,8 +325,6 @@ public class arma : MonoBehaviour
         // HACER DASH
         if (usandoUlti)
         {
-            Camera cam = Camera.main;
-
             Vector3 direccion =
                 cam.transform.forward;
 

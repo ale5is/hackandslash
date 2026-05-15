@@ -2344,7 +2344,7 @@ MonoBehaviour:
   suavizado: 8
   sensibilidadMouse: 3
   minY: -30
-  maxY: 30
+  maxY: 10
 --- !u!1 &963945416
 GameObject:
   m_ObjectHideFlags: 0

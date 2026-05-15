@@ -42,6 +42,7 @@ public class datosJugador : MonoBehaviour
 
     void Update()
     {
+        ActualizarUI();
         // DAÑO
         if (Input.GetKeyDown(KeyCode.H))
         {
