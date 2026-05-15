@@ -1,10 +1,53 @@
 ﻿using UnityEngine;
+using UnityEngine.UI;
+using TMPro;
 
 public class arma : MonoBehaviour
 {
     [Header("Ataque")]
     public float velocidadAtaque = 8f;
     public float anguloAtaque = 120f;
+
+    // 🔥 AVANCE AL GOLPEAR
+    public float avanceAtaque = 3f;
+
+    [Header("Daño")]
+    public int dañoBase = 10;
+    public int dañoActual = 10;
+
+    [Header("Habilidad Buff")]
+    public float multiplicadorDaño = 2f;
+    public float duracionBuff = 5f;
+    public KeyCode teclaBuff = KeyCode.Q;
+
+    private bool buffActivo = false;
+    private float tiempoBuff;
+
+    [Header("Ultimate Cargable")]
+    public float fuerzaUlti = 25f;
+    public float duracionUlti = 0.2f;
+    public KeyCode teclaUlti = KeyCode.R;
+
+    public Slider sliderUlti;
+    public TMP_Text porcentajeTexto;
+
+    public float tiempoMaxCarga = 2f;
+
+    public float dañoMinUlti = 20f;
+    public float dañoMaxUlti = 100f;
+
+    private bool cargandoUlti = false;
+    private float tiempoCarga = 0f;
+
+    private float dañoUltiActual;
+
+    private bool usandoUlti = false;
+    private float tiempoUlti;
+
+    private CharacterController controller;
+    private movimiento movimientoJugador;
+
+    private Vector3 direccionAtaque;
 
     [Header("Cooldown")]
     public float tiempoEntreAtaques = 0.5f;
@@ -19,17 +62,41 @@ public class arma : MonoBehaviour
     private Quaternion rotacionObjetivo;
 
     public Collider col;
+    public Renderer armaRenderer;
 
     void Start()
     {
-        
-        col.enabled = false; // desactivado al inicio
+        controller =
+            GetComponentInParent<CharacterController>();
+
+        movimientoJugador =
+            GetComponentInParent<movimiento>();
+
+        dañoActual = dañoBase;
+
+        col.enabled = false;
+
+        // EMISSION APAGADO
+        armaRenderer.material.DisableKeyword("_EMISSION");
+
+        // CONFIG SLIDER
+        sliderUlti.gameObject.SetActive(false);
+
+        sliderUlti.minValue = 0;
+        sliderUlti.maxValue = tiempoMaxCarga;
+        sliderUlti.value = 0;
+
+        // TEXTO %
+        porcentajeTexto.gameObject.SetActive(false);
     }
 
     void Update()
     {
         if (cooldown > 0)
             cooldown -= Time.deltaTime;
+
+        HabilidadBuff();
+        UltimateDash();
 
         if (Input.GetMouseButtonDown(0)
             && !atacando
@@ -41,13 +108,17 @@ public class arma : MonoBehaviour
 
             cooldown = tiempoEntreAtaques;
 
-            rotacionInicial = transform.localRotation;
+            // GUARDAR DIRECCIÓN
+            direccionAtaque =
+                movimientoJugador.transform.forward;
+
+            rotacionInicial =
+                transform.localRotation;
 
             rotacionObjetivo =
                 rotacionInicial *
                 Quaternion.Euler(0, anguloAtaque, 0);
 
-            // 🔥 ACTIVA collider al atacar
             col.enabled = true;
         }
 
@@ -57,12 +128,24 @@ public class arma : MonoBehaviour
 
     void AnimarAtaque()
     {
-        progreso += Time.deltaTime * velocidadAtaque;
+        progreso +=
+            Time.deltaTime * velocidadAtaque;
+
+        // AVANZAR AL ATACAR
+        controller.Move(
+            direccionAtaque.normalized *
+            avanceAtaque *
+            Time.deltaTime
+        );
 
         if (!regresando)
         {
             transform.localRotation =
-                Quaternion.Slerp(rotacionInicial, rotacionObjetivo, progreso);
+                Quaternion.Slerp(
+                    rotacionInicial,
+                    rotacionObjetivo,
+                    progreso
+                );
 
             if (progreso >= 1f)
             {
@@ -73,15 +156,156 @@ public class arma : MonoBehaviour
         else
         {
             transform.localRotation =
-                Quaternion.Slerp(rotacionObjetivo, rotacionInicial, progreso);
+                Quaternion.Slerp(
+                    rotacionObjetivo,
+                    rotacionInicial,
+                    progreso
+                );
 
             if (progreso >= 1f)
             {
                 atacando = false;
-                transform.localRotation = rotacionInicial;
 
-                // ❌ DESACTIVA collider al terminar ataque
+                transform.localRotation =
+                    rotacionInicial;
+
                 col.enabled = false;
+            }
+        }
+    }
+
+    // =========================
+    // BUFF DE DAÑO
+    // =========================
+    void HabilidadBuff()
+    {
+        if (Input.GetKeyDown(teclaBuff)
+            && !buffActivo)
+        {
+            // ACTIVAR EMISSION
+            armaRenderer.material.EnableKeyword("_EMISSION");
+
+            buffActivo = true;
+            tiempoBuff = duracionBuff;
+
+            dañoActual = Mathf.RoundToInt(
+                dañoBase *
+                multiplicadorDaño
+            );
+
+            Debug.Log("BUFF ACTIVADO");
+        }
+
+        if (buffActivo)
+        {
+            tiempoBuff -= Time.deltaTime;
+
+            if (tiempoBuff <= 0)
+            {
+                // APAGAR EMISSION
+                armaRenderer.material.DisableKeyword("_EMISSION");
+
+                buffActivo = false;
+
+                dañoActual = dañoBase;
+
+                Debug.Log("BUFF TERMINADO");
+            }
+        }
+    }
+
+    // =========================
+    // ULTIMATE CARGABLE
+    // =========================
+    void UltimateDash()
+    {
+        // EMPEZAR CARGA
+        if (Input.GetKeyDown(teclaUlti))
+        {
+            cargandoUlti = true;
+
+            tiempoCarga = 0f;
+
+            sliderUlti.gameObject.SetActive(true);
+
+            porcentajeTexto.gameObject.SetActive(true);
+        }
+
+        // CARGANDO
+        if (cargandoUlti)
+        {
+            tiempoCarga += Time.deltaTime;
+
+            // LIMITAR
+            if (tiempoCarga > tiempoMaxCarga)
+                tiempoCarga = tiempoMaxCarga;
+
+            // ACTUALIZAR SLIDER
+            sliderUlti.value = tiempoCarga;
+
+            // PORCENTAJE SIN DECIMALES
+            int porcentajeUI =
+                Mathf.RoundToInt(
+                    (tiempoCarga / tiempoMaxCarga) * 100
+                );
+
+            porcentajeTexto.text =
+                porcentajeUI + "%";
+        }
+
+        // SOLTAR BOTÓN
+        if (Input.GetKeyUp(teclaUlti)
+            && cargandoUlti)
+        {
+            cargandoUlti = false;
+
+            sliderUlti.gameObject.SetActive(false);
+
+            porcentajeTexto.gameObject.SetActive(false);
+
+            // CALCULAR DAÑO
+            float porcentaje =
+                tiempoCarga / tiempoMaxCarga;
+
+            dañoUltiActual = Mathf.Lerp(
+                dañoMinUlti,
+                dañoMaxUlti,
+                porcentaje
+            );
+
+            usandoUlti = true;
+            tiempoUlti = duracionUlti;
+
+            Debug.Log(
+                "Daño Ulti: " +
+                dañoUltiActual
+            );
+        }
+
+        // HACER DASH
+        if (usandoUlti)
+        {
+            Camera cam = Camera.main;
+
+            Vector3 direccion =
+                cam.transform.forward;
+
+            // IGNORAR ALTURA
+            direccion.y = 0;
+
+            direccion.Normalize();
+
+            controller.Move(
+                direccion *
+                fuerzaUlti *
+                Time.deltaTime
+            );
+
+            tiempoUlti -= Time.deltaTime;
+
+            if (tiempoUlti <= 0)
+            {
+                usandoUlti = false;
             }
         }
     }

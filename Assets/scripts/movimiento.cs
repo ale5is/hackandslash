@@ -135,16 +135,28 @@ public class movimiento  : MonoBehaviour
         {
             cooldownActual -= Time.deltaTime;
 
+            // INICIAR DASH
             if (Input.GetKeyDown(KeyCode.Space) && cooldownActual <= 0)
             {
                 haciendoDash = true;
                 tiempoDash = duracionDash;
                 cooldownActual = cooldownDash;
+
+                // Si no se mueve, dash hacia adelante
+                if (direccionMovimiento.magnitude < 0.1f)
+                {
+                    direccionMovimiento = transform.forward;
+                }
             }
 
+            // HACER DASH
             if (haciendoDash)
             {
-                controller.Move(transform.forward * fuerzaDash * Time.deltaTime);
+                controller.Move(
+                    direccionMovimiento.normalized *
+                    fuerzaDash *
+                    Time.deltaTime
+                );
 
                 tiempoDash -= Time.deltaTime;
 
@@ -154,6 +166,5 @@ public class movimiento  : MonoBehaviour
                 }
             }
         }
-            
     }
 }
