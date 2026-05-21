@@ -8,6 +8,9 @@ public class EnemigoIa : MonoBehaviour
     public float speed = 3f;
     public float detectionRange = 10f;
 
+    [Header("Rotación")]
+    public float rotationSpeed = 10f;
+
     [Header("Ataque Embestida")]
     public float rangoAtaque = 3f;
     public float tiempoPreparacion = 0.7f;
@@ -49,17 +52,37 @@ public class EnemigoIa : MonoBehaviour
 
     private float hitCooldownTimer = 0f;
 
+    [Header("Animación golpe")]
+    public float inclinacionGolpe = 25f;
+    public float velocidadRecuperacion = 8f;
+
+    [Header("Animación ataque")]
+    public float inclinacionPreparacion = -25f;
+    public float inclinacionAtaque = 35f;
+
+    private Quaternion rotacionOriginal;
+    private Quaternion rotacionGolpe;
+
     [Header("Visual")]
     public Renderer renderEnemigo;
+
+    private Material mat;
 
     void Start()
     {
         if (renderEnemigo == null)
             renderEnemigo = GetComponent<Renderer>();
+
+        mat = renderEnemigo.material;
+
+        rotacionOriginal = transform.rotation;
     }
 
     void Update()
     {
+        // SEGURIDAD
+        if (vida <= 0) return;
+
         if (player == null) return;
 
         // =========================
@@ -74,7 +97,7 @@ public class EnemigoIa : MonoBehaviour
         if (enCooldownAtaque)
         {
             // AMARILLO DESCANSANDO
-            renderEnemigo.material.color = Color.yellow;
+            mat.color = Color.yellow;
 
             timerCooldownAtaque -= Time.deltaTime;
 
@@ -91,20 +114,30 @@ public class EnemigoIa : MonoBehaviour
         // =========================
         if (isKnockedBack)
         {
-            // AMARILLO = STUNEADO
-            renderEnemigo.material.color = Color.yellow;
+            // AMARILLO STUN
+            mat.color = Color.yellow;
 
-            // MOVIMIENTO SUAVE
+            knockVelocity.y = 0f;
+
+            // EMPUJE
             transform.position +=
                 knockVelocity *
                 Time.deltaTime;
 
-            // DESACELERACIÓN
+            // DESACELERAR
             knockVelocity = Vector3.Lerp(
                 knockVelocity,
                 Vector3.zero,
                 8f * Time.deltaTime
             );
+
+            // ROTACIÓN HACIA ATRÁS
+            transform.rotation =
+                Quaternion.Slerp(
+                    transform.rotation,
+                    rotacionGolpe,
+                    15f * Time.deltaTime
+                );
 
             knockbackTimer -= Time.deltaTime;
 
@@ -113,10 +146,24 @@ public class EnemigoIa : MonoBehaviour
                 isKnockedBack = false;
 
                 knockVelocity = Vector3.zero;
+
+                // DESCANSO
+                enCooldownAtaque = true;
+                timerCooldownAtaque = 0.5f;
             }
 
             return;
         }
+
+        // =========================
+        // RECUPERAR ROTACIÓN
+        // =========================
+        transform.rotation =
+            Quaternion.Slerp(
+                transform.rotation,
+                rotacionOriginal,
+                velocidadRecuperacion * Time.deltaTime
+            );
 
         // =========================
         // EMBESTIDA
@@ -124,7 +171,7 @@ public class EnemigoIa : MonoBehaviour
         if (embistiendo)
         {
             // ROJO ATACANDO
-            renderEnemigo.material.color = Color.red;
+            mat.color = Color.red;
 
             transform.position +=
                 direccionEmbestida *
@@ -137,7 +184,7 @@ public class EnemigoIa : MonoBehaviour
             {
                 embistiendo = false;
 
-                // EMPIEZA DESCANSO
+                // DESCANSO POST ATAQUE
                 enCooldownAtaque = true;
                 timerCooldownAtaque = tiempoEntreAtaques;
             }
@@ -151,7 +198,7 @@ public class EnemigoIa : MonoBehaviour
         if (preparandoAtaque)
         {
             // ROJO CARGANDO
-            renderEnemigo.material.color = Color.red;
+            mat.color = Color.red;
 
             timerPreparacion -= Time.deltaTime;
 
@@ -162,19 +209,38 @@ public class EnemigoIa : MonoBehaviour
 
             if (mirar != Vector3.zero)
             {
-                transform.rotation =
+                Quaternion baseRotacion =
                     Quaternion.LookRotation(mirar);
+
+                // INCLINARSE HACIA ATRÁS
+                Quaternion inclinacion =
+                    baseRotacion *
+                    Quaternion.Euler(inclinacionPreparacion, 0f, 0f);
+
+                transform.rotation =
+                    Quaternion.Slerp(
+                        transform.rotation,
+                        inclinacion,
+                        rotationSpeed * Time.deltaTime
+                    );
             }
 
             if (timerPreparacion <= 0f)
             {
                 preparandoAtaque = false;
 
+                if (player == null) return;
+
                 direccionEmbestida =
                     (player.position - transform.position)
                     .normalized;
 
                 direccionEmbestida.y = 0f;
+
+                // INCLINARSE HACIA ADELANTE AL ATACAR
+                transform.rotation =
+                    Quaternion.LookRotation(direccionEmbestida) *
+                    Quaternion.Euler(inclinacionAtaque, 0f, 0f);
 
                 embistiendo = true;
 
@@ -196,7 +262,7 @@ public class EnemigoIa : MonoBehaviour
         // =========================
         // CERCA = PREPARA ATAQUE
         // =========================
-        if (distance <= rangoAtaque)
+        if (distance <= rangoAtaque && !preparandoAtaque)
         {
             preparandoAtaque = true;
 
@@ -211,7 +277,7 @@ public class EnemigoIa : MonoBehaviour
         if (distance <= detectionRange)
         {
             // VERDE MOVIÉNDOSE
-            renderEnemigo.material.color = Color.green;
+            mat.color = Color.green;
 
             Vector3 direction =
                 player.position - transform.position;
@@ -225,17 +291,27 @@ public class EnemigoIa : MonoBehaviour
                 speed *
                 Time.deltaTime;
 
-            // MIRAR JUGADOR
+            // ROTACIÓN SUAVE
             if (direction != Vector3.zero)
             {
-                transform.rotation =
+                Quaternion rotacionObjetivo =
                     Quaternion.LookRotation(direction);
+
+                transform.rotation =
+                    Quaternion.Slerp(
+                        transform.rotation,
+                        rotacionObjetivo,
+                        rotationSpeed * Time.deltaTime
+                    );
+
+                // GUARDAR ROTACIÓN NORMAL
+                rotacionOriginal = rotacionObjetivo;
             }
         }
         else
         {
             // BLANCO QUIETO
-            renderEnemigo.material.color = Color.white;
+            mat.color = Color.white;
         }
     }
 
@@ -243,10 +319,15 @@ public class EnemigoIa : MonoBehaviour
     {
         if (!other.CompareTag("arma")) return;
 
-        if (hitCooldownTimer > 0f) return;
+        bool puedeRecibirDaño = hitCooldownTimer <= 0f;
 
-        // DAÑO
-        vida--;
+        if (puedeRecibirDaño)
+        {
+            // DAÑO
+            vida--;
+
+            hitCooldownTimer = hitCooldown;
+        }
 
         // DIRECCIÓN KNOCKBACK
         Vector3 dir =
@@ -255,6 +336,11 @@ public class EnemigoIa : MonoBehaviour
 
         dir.y = 0f;
 
+        // ROTACIÓN GOLPE
+        rotacionGolpe =
+            Quaternion.LookRotation(dir) *
+            Quaternion.Euler(inclinacionGolpe, 0f, 0f);
+
         // FUERZA INICIAL
         knockVelocity = dir * knockbackForce;
 
@@ -262,11 +348,12 @@ public class EnemigoIa : MonoBehaviour
 
         knockbackTimer = knockbackTime;
 
-        hitCooldownTimer = hitCooldown;
-
         // CANCELAR ATAQUE
-        preparandoAtaque = false;
-        embistiendo = false;
+        if (embistiendo)
+        {
+            embistiendo = false;
+            timerEmbestida = 0f;
+        }
 
         // MORIR
         if (vida <= 0)

@@ -102,9 +102,9 @@ public class datosJugador : MonoBehaviour
         }
     }
 
-    private void OnCollisionEnter(Collision other)
+    private void OnTriggerEnter(Collider other)
     {
-        if (other.gameObject.CompareTag("enemigo") && !invulnerable)
+        if (other.CompareTag("enemigo") && !invulnerable)
         {
             // OBTENER SCRIPT DEL ENEMIGO
             EnemigoIa enemigo =
