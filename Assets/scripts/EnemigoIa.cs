@@ -16,12 +16,18 @@ public class EnemigoIa : MonoBehaviour
     public float duracionEmbestida = 0.3f;
 
     private bool preparandoAtaque = false;
-    private bool embistiendo = false;
+    public bool embistiendo = false;
 
     private float timerPreparacion = 0f;
     private float timerEmbestida = 0f;
 
     private Vector3 direccionEmbestida;
+
+    [Header("Cooldown ataque")]
+    public float tiempoEntreAtaques = 2f;
+
+    private bool enCooldownAtaque = false;
+    private float timerCooldownAtaque = 0f;
 
     [Header("Vida")]
     public int vida = 3;
@@ -31,41 +37,82 @@ public class EnemigoIa : MonoBehaviour
     public int cantidadOrbes = 5;
 
     [Header("Knockback")]
-    public float knockbackForce = 5f;
-    public float knockbackTime = 0.2f;
+    public float knockbackForce = 8f;
+    public float knockbackTime = 0.25f;
     public float hitCooldown = 0.5f;
 
     private bool isKnockedBack = false;
+
     private float knockbackTimer = 0f;
-    private Vector3 knockDirection;
+
+    private Vector3 knockVelocity;
 
     private float hitCooldownTimer = 0f;
+
+    [Header("Visual")]
+    public Renderer renderEnemigo;
+
+    void Start()
+    {
+        if (renderEnemigo == null)
+            renderEnemigo = GetComponent<Renderer>();
+    }
 
     void Update()
     {
         if (player == null) return;
 
         // =========================
-        // COOLDOWN
+        // COOLDOWN HIT
         // =========================
         if (hitCooldownTimer > 0f)
             hitCooldownTimer -= Time.deltaTime;
+
+        // =========================
+        // COOLDOWN ATAQUE
+        // =========================
+        if (enCooldownAtaque)
+        {
+            // AMARILLO DESCANSANDO
+            renderEnemigo.material.color = Color.yellow;
+
+            timerCooldownAtaque -= Time.deltaTime;
+
+            if (timerCooldownAtaque <= 0f)
+            {
+                enCooldownAtaque = false;
+            }
+
+            return;
+        }
 
         // =========================
         // KNOCKBACK
         // =========================
         if (isKnockedBack)
         {
+            // AMARILLO = STUNEADO
+            renderEnemigo.material.color = Color.yellow;
+
+            // MOVIMIENTO SUAVE
             transform.position +=
-                knockDirection *
-                knockbackForce *
+                knockVelocity *
                 Time.deltaTime;
+
+            // DESACELERACIÓN
+            knockVelocity = Vector3.Lerp(
+                knockVelocity,
+                Vector3.zero,
+                8f * Time.deltaTime
+            );
 
             knockbackTimer -= Time.deltaTime;
 
             if (knockbackTimer <= 0f)
             {
                 isKnockedBack = false;
+
+                knockVelocity = Vector3.zero;
             }
 
             return;
@@ -76,6 +123,9 @@ public class EnemigoIa : MonoBehaviour
         // =========================
         if (embistiendo)
         {
+            // ROJO ATACANDO
+            renderEnemigo.material.color = Color.red;
+
             transform.position +=
                 direccionEmbestida *
                 velocidadEmbestida *
@@ -86,6 +136,10 @@ public class EnemigoIa : MonoBehaviour
             if (timerEmbestida <= 0f)
             {
                 embistiendo = false;
+
+                // EMPIEZA DESCANSO
+                enCooldownAtaque = true;
+                timerCooldownAtaque = tiempoEntreAtaques;
             }
 
             return;
@@ -96,9 +150,11 @@ public class EnemigoIa : MonoBehaviour
         // =========================
         if (preparandoAtaque)
         {
+            // ROJO CARGANDO
+            renderEnemigo.material.color = Color.red;
+
             timerPreparacion -= Time.deltaTime;
 
-            // mirar jugador mientras carga
             Vector3 mirar =
                 player.position - transform.position;
 
@@ -138,7 +194,7 @@ public class EnemigoIa : MonoBehaviour
             );
 
         // =========================
-        // SI ESTÁ CERCA -> PREPARA EMBESTIDA
+        // CERCA = PREPARA ATAQUE
         // =========================
         if (distance <= rangoAtaque)
         {
@@ -150,10 +206,13 @@ public class EnemigoIa : MonoBehaviour
         }
 
         // =========================
-        // SI ESTÁ LEJOS -> SEGUIR
+        // SEGUIR JUGADOR
         // =========================
         if (distance <= detectionRange)
         {
+            // VERDE MOVIÉNDOSE
+            renderEnemigo.material.color = Color.green;
+
             Vector3 direction =
                 player.position - transform.position;
 
@@ -166,12 +225,17 @@ public class EnemigoIa : MonoBehaviour
                 speed *
                 Time.deltaTime;
 
-            // mirar jugador
+            // MIRAR JUGADOR
             if (direction != Vector3.zero)
             {
                 transform.rotation =
                     Quaternion.LookRotation(direction);
             }
+        }
+        else
+        {
+            // BLANCO QUIETO
+            renderEnemigo.material.color = Color.white;
         }
     }
 
@@ -181,15 +245,18 @@ public class EnemigoIa : MonoBehaviour
 
         if (hitCooldownTimer > 0f) return;
 
-        // daño
+        // DAÑO
         vida--;
 
-        // knockback
-        knockDirection =
+        // DIRECCIÓN KNOCKBACK
+        Vector3 dir =
             (transform.position -
             other.transform.position).normalized;
 
-        knockDirection.y = 0f;
+        dir.y = 0f;
+
+        // FUERZA INICIAL
+        knockVelocity = dir * knockbackForce;
 
         isKnockedBack = true;
 
@@ -197,11 +264,11 @@ public class EnemigoIa : MonoBehaviour
 
         hitCooldownTimer = hitCooldown;
 
-        // cancelar ataque
+        // CANCELAR ATAQUE
         preparandoAtaque = false;
         embistiendo = false;
 
-        // morir
+        // MORIR
         if (vida <= 0)
         {
             Morir();
@@ -210,7 +277,7 @@ public class EnemigoIa : MonoBehaviour
 
     void Morir()
     {
-        // invoca orbes tipo minecraft
+        // DROPEAR ORBES
         for (int i = 0; i < cantidadOrbes; i++)
         {
             Vector3 randomOffset =

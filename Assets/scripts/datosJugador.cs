@@ -24,6 +24,13 @@ public class datosJugador : MonoBehaviour
     [Header("Nivel")]
     public int nivel = 1;
 
+    [Header("Daño enemigo")]
+    public int dañoEnemigo = 10;
+
+    [Header("Invulnerabilidad")]
+    public float tiempoInvulnerable = 1f;
+    private bool invulnerable = false;
+
     [Header("UI Sliders")]
     public Slider vidaSlider;
     public Slider magiaSlider;
@@ -43,6 +50,7 @@ public class datosJugador : MonoBehaviour
     void Update()
     {
         ActualizarUI();
+
         // DAÑO
         if (Input.GetKeyDown(KeyCode.H))
         {
@@ -92,6 +100,40 @@ public class datosJugador : MonoBehaviour
         {
             AgregarCorrupcion(25);
         }
+    }
+
+    private void OnCollisionEnter(Collision other)
+    {
+        if (other.gameObject.CompareTag("enemigo") && !invulnerable)
+        {
+            // OBTENER SCRIPT DEL ENEMIGO
+            EnemigoIa enemigo =
+                other.gameObject.GetComponent<EnemigoIa>();
+
+            // SOLO HACER DAÑO SI ESTÁ EMBISTIENDO
+            if (enemigo != null && enemigo.embistiendo)
+            {
+                Debug.Log("El jugador fue golpeado por la embestida");
+
+                vida -= dañoEnemigo;
+
+                if (vida < 0)
+                    vida = 0;
+
+                ActualizarUI();
+
+                StartCoroutine(Invulnerabilidad());
+            }
+        }
+    }
+
+    IEnumerator Invulnerabilidad()
+    {
+        invulnerable = true;
+
+        yield return new WaitForSeconds(tiempoInvulnerable);
+
+        invulnerable = false;
     }
 
     public void AgregarCorrupcion(float cantidad)
