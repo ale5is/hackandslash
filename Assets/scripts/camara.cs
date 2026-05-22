@@ -14,6 +14,10 @@ public class camara : MonoBehaviour
     [Header("Distancia")]
     public Vector3 offset = new Vector3(0, 6, -8);
 
+    [Header("Zoom automático cerca de paredes")]
+    public float distanciaMinimaCamara = 2f;
+    public LayerMask capasColision;
+
     [Header("Suavizado")]
     public float suavizado = 8f;
 
@@ -56,8 +60,7 @@ public class camara : MonoBehaviour
             }
             else
             {
-                enemigoFijado = null;
-                jugador.GetComponent<movimiento>().objetivoLock = null;
+                DesactivarLock();
             }
         }
 
@@ -66,13 +69,11 @@ public class camara : MonoBehaviour
         // =========================
         if (enemigoFijado != null)
         {
-            // Dirección hacia enemigo
             Vector3 direccion =
                 (jugador.position - enemigoFijado.position).normalized;
 
             direccion.y = 0;
 
-            // Rotar jugador hacia enemigo
             Vector3 dirJugador =
                 enemigoFijado.position - jugador.position;
 
@@ -90,23 +91,23 @@ public class camara : MonoBehaviour
                 );
             }
 
-            // Posición cámara detrás jugador
-            Vector3 posicionLock =
+            Vector3 posicionDeseada =
                 jugador.position +
                 direccion * Mathf.Abs(offset.z) +
                 Vector3.up * offset.y;
 
+            posicionDeseada =
+                AjustarCamaraConColision(posicionDeseada);
+
             transform.position = Vector3.Lerp(
                 transform.position,
-                posicionLock,
+                posicionDeseada,
                 suavizado * Time.deltaTime
             );
 
-            // Punto medio entre ambos
             Vector3 puntoMedio =
                 (jugador.position + enemigoFijado.position) / 2f;
 
-            // Mirar al medio
             transform.LookAt(
                 puntoMedio + Vector3.up * 1.5f
             );
@@ -128,6 +129,9 @@ public class camara : MonoBehaviour
             Vector3 posicionDeseada =
                 jugador.position + rotacion * offset;
 
+            posicionDeseada =
+                AjustarCamaraConColision(posicionDeseada);
+
             transform.position = Vector3.Lerp(
                 transform.position,
                 posicionDeseada,
@@ -140,12 +144,43 @@ public class camara : MonoBehaviour
         }
     }
 
+    Vector3 AjustarCamaraConColision(Vector3 posicionDeseada)
+    {
+        Vector3 origen =
+            jugador.position + Vector3.up * 1.5f;
+
+        Vector3 direccion =
+            posicionDeseada - origen;
+
+        float distancia =
+            direccion.magnitude;
+
+        direccion.Normalize();
+
+        RaycastHit hit;
+
+        if (Physics.Raycast(
+            origen,
+            direccion,
+            out hit,
+            distancia,
+            capasColision
+        ))
+        {
+            return hit.point -
+                   direccion * distanciaMinimaCamara;
+        }
+
+        return posicionDeseada;
+    }
+
     void BuscarEnemigo()
     {
         GameObject[] enemigos =
             GameObject.FindGameObjectsWithTag(tagEnemigo);
 
         float distanciaMinima = Mathf.Infinity;
+
         Transform mejorObjetivo = null;
 
         foreach (GameObject enemigo in enemigos)
@@ -172,12 +207,32 @@ public class camara : MonoBehaviour
         }
     }
 
+    // =========================
+    // DESACTIVAR LOCK
+    // =========================
+    public void DesactivarLock()
+    {
+        enemigoFijado = null;
+
+        if (jugador != null)
+        {
+            movimiento mov =
+                jugador.GetComponent<movimiento>();
+
+            if (mov != null)
+            {
+                mov.objetivoLock = null;
+            }
+        }
+    }
+
     public void ResetearCamara()
     {
         transform.position = posicionInicial;
         transform.rotation = rotacionInicial;
 
-        Vector3 angulos = rotacionInicial.eulerAngles;
+        Vector3 angulos =
+            rotacionInicial.eulerAngles;
 
         rotacionX = angulos.y;
         rotacionY = angulos.x;

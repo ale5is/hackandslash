@@ -74,6 +74,11 @@ public class arma : MonoBehaviour
 
     private Camera cam;
 
+    // =========================
+    // CÁMARA SCRIPT
+    // =========================
+    private camara scriptCamara;
+
     void Start()
     {
         controller =
@@ -105,6 +110,10 @@ public class arma : MonoBehaviour
         if (cam != null)
         {
             cam.fieldOfView = fovNormal;
+
+            // OBTENER SCRIPT CÁMARA
+            scriptCamara =
+                cam.GetComponent<camara>();
         }
     }
 
@@ -298,6 +307,12 @@ public class arma : MonoBehaviour
             && cargandoUlti)
         {
             cargandoUlti = false;
+
+            // DESACTIVAR LOCK ON
+            if (scriptCamara != null)
+            {
+                scriptCamara.DesactivarLock();
+            }
 
             sliderUlti.gameObject.SetActive(false);
 

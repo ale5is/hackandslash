@@ -870,6 +870,8 @@ MonoBehaviour:
   hitCooldown: 1
   inclinacionGolpe: 25
   velocidadRecuperacion: 8
+  inclinacionPreparacion: -25
+  inclinacionAtaque: 35
   renderEnemigo: {fileID: 0}
 --- !u!136 &377366670
 CapsuleCollider:
@@ -2007,7 +2009,7 @@ GameObject:
   - component: {fileID: 805782506}
   - component: {fileID: 805782505}
   - component: {fileID: 805782504}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube (4)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -2094,8 +2096,8 @@ Transform:
   m_GameObject: {fileID: 805782503}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -17.24, y: 0, z: 17.72}
-  m_LocalScale: {x: 35, y: 15, z: 0.5}
+  m_LocalPosition: {x: -17.24, y: 0, z: 20.24}
+  m_LocalScale: {x: 40, y: 15, z: 0.5}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1755857884}
@@ -2236,7 +2238,7 @@ Transform:
   m_GameObject: {fileID: 959584453}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 105.6, y: 7.59, z: 35.7}
+  m_LocalPosition: {x: 105.6, y: 7.59, z: 39}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -2356,6 +2358,10 @@ MonoBehaviour:
   tagEnemigo: enemigo
   rangoBusqueda: 15
   offset: {x: 0, y: 6, z: -8}
+  distanciaMinimaCamara: 2
+  capasColision:
+    serializedVersion: 2
+    m_Bits: 8
   suavizado: 8
   sensibilidadMouse: 3
   minY: -30
@@ -2477,7 +2483,7 @@ GameObject:
   - component: {fileID: 1011335191}
   - component: {fileID: 1011335190}
   - component: {fileID: 1011335189}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube (3)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -2564,8 +2570,8 @@ Transform:
   m_GameObject: {fileID: 1011335188}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -17.24, y: 0, z: -17.21}
-  m_LocalScale: {x: 35, y: 15, z: 0.5}
+  m_LocalPosition: {x: -17.24, y: 0, z: -20.26}
+  m_LocalScale: {x: 40, y: 15, z: 0.5}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1755857884}
@@ -2850,7 +2856,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: -17.24, y: -7.59, z: 0}
-  m_LocalScale: {x: 35, y: 0.5, z: 35}
+  m_LocalScale: {x: 40, y: 0.5, z: 40}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1755857884}
@@ -3538,7 +3544,7 @@ Transform:
   m_GameObject: {fileID: 1287783677}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 35, y: 7.59, z: 35.7}
+  m_LocalPosition: {x: 35, y: 7.59, z: 39}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -3702,7 +3708,7 @@ GameObject:
   - component: {fileID: 1524531418}
   - component: {fileID: 1524531417}
   - component: {fileID: 1524531416}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube (1)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -3789,8 +3795,8 @@ Transform:
   m_GameObject: {fileID: 1524531415}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.5, y: 15, z: 35}
+  m_LocalPosition: {x: 2.9, y: 0, z: 0}
+  m_LocalScale: {x: 0.5, y: 15, z: 40}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1755857884}
@@ -4332,7 +4338,7 @@ GameObject:
   - component: {fileID: 1943538309}
   - component: {fileID: 1943538308}
   - component: {fileID: 1943538307}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Cube (2)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4419,8 +4425,8 @@ Transform:
   m_GameObject: {fileID: 1943538306}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -34.53, y: 0, z: 0}
-  m_LocalScale: {x: 0.5, y: 15, z: 35}
+  m_LocalPosition: {x: -37.43, y: 0, z: 0}
+  m_LocalScale: {x: 0.5, y: 15, z: 40}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1755857884}
