@@ -4,6 +4,9 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
+// POST PROCESSING
+using UnityEngine.Rendering.PostProcessing;
+
 public class datosJugador : MonoBehaviour
 {
     [Header("Vida")]
@@ -19,10 +22,10 @@ public class datosJugador : MonoBehaviour
 
     [Header("Escalado")]
     public int corrupcionPorNivel = 100;
-    public int nivelMaximo = 999;
 
     [Header("Nivel")]
     public int nivel = 1;
+    public int nivelMaximo = 10;
 
     [Header("Daño enemigo")]
     public int dañoEnemigo = 10;
@@ -30,6 +33,14 @@ public class datosJugador : MonoBehaviour
     [Header("Invulnerabilidad")]
     public float tiempoInvulnerable = 1f;
     private bool invulnerable = false;
+
+    [Header("POST PROCESS")]
+    public PostProcessVolume postProcessVolume;
+
+    private Vignette vignette;
+
+    [Range(0f, 1f)]
+    public float intensidadMaxima = 0.6f;
 
     [Header("UI Sliders")]
     public Slider vidaSlider;
@@ -43,14 +54,18 @@ public class datosJugador : MonoBehaviour
 
     void Start()
     {
+        // OBTENER VIGNETTE
+        if (postProcessVolume != null)
+        {
+            postProcessVolume.profile.TryGetSettings(out vignette);
+        }
+
         ActualizarNivel();
         ActualizarUI();
     }
 
     void Update()
     {
-        ActualizarUI();
-
         // DAÑO
         if (Input.GetKeyDown(KeyCode.H))
         {
@@ -106,14 +121,12 @@ public class datosJugador : MonoBehaviour
     {
         if (other.CompareTag("enemigo") && !invulnerable)
         {
-            // OBTENER SCRIPT DEL ENEMIGO
             EnemigoIa enemigo =
                 other.gameObject.GetComponent<EnemigoIa>();
 
-            // SOLO HACER DAÑO SI ESTÁ EMBISTIENDO
             if (enemigo != null && enemigo.embistiendo)
             {
-                Debug.Log("El jugador fue golpeado por la embestida");
+                Debug.Log("El jugador fue golpeado");
 
                 vida -= dañoEnemigo;
 
@@ -146,32 +159,89 @@ public class datosJugador : MonoBehaviour
 
     void ActualizarNivel()
     {
-        // Cada 100 corrupción = 1 nivel
-        nivel = Mathf.FloorToInt(corrupcion / corrupcionPorNivel) + 1;
+        // CALCULAR NIVEL
+        nivel =
+            Mathf.FloorToInt(
+                corrupcion / corrupcionPorNivel
+            ) + 1;
 
-        // Limitar nivel máximo
-        if (nivel > nivelMaximo)
-            nivel = nivelMaximo;
+        // LIMITAR NIVEL
+        nivel = Mathf.Clamp(
+            nivel,
+            1,
+            nivelMaximo
+        );
+
+        // VIGNETTE
+        if (vignette != null)
+        {
+            // NIVEL 1 = 0
+            // NIVEL 10 = 1
+            float porcentaje =
+                (float)(nivel - 1) /
+                (nivelMaximo - 1);
+
+            // CALCULAR INTENSIDAD
+            float intensidad =
+                porcentaje * intensidadMaxima;
+
+            // APLICAR
+            vignette.intensity.overrideState = true;
+            vignette.intensity.value = intensidad;
+
+            vignette.smoothness.overrideState = true;
+            vignette.smoothness.value = 1f;
+
+            vignette.rounded.overrideState = true;
+            vignette.rounded.value = true;
+
+            Debug.Log(
+                "Nivel: " + nivel +
+                " | Intensidad: " + intensidad
+            );
+        }
     }
 
     void ActualizarUI()
     {
         // VIDA
-        vidaSlider.maxValue = vidaMax;
-        vidaSlider.value = vida;
+        if (vidaSlider != null)
+        {
+            vidaSlider.maxValue = vidaMax;
+            vidaSlider.value = vida;
+        }
 
-        vidaTexto.text = vida + " / " + vidaMax;
+        if (vidaTexto != null)
+        {
+            vidaTexto.text =
+                vida + " / " + vidaMax;
+        }
 
         // MAGIA
-        magiaSlider.maxValue = magiaMax;
-        magiaSlider.value = magia;
+        if (magiaSlider != null)
+        {
+            magiaSlider.maxValue = magiaMax;
+            magiaSlider.value = magia;
+        }
 
-        magiaTexto.text = magia + " / " + magiaMax;
+        if (magiaTexto != null)
+        {
+            magiaTexto.text =
+                magia + " / " + magiaMax;
+        }
 
         // CORRUPCIÓN
-        corrupcionTexto.text = "Corrupción: " + corrupcion;
+        if (corrupcionTexto != null)
+        {
+            corrupcionTexto.text =
+                "Corrupción: " + corrupcion;
+        }
 
         // NIVEL
-        nivelTexto.text = "Nivel: " + nivel;
+        if (nivelTexto != null)
+        {
+            nivelTexto.text =
+                "Nivel: " + nivel;
+        }
     }
 }
