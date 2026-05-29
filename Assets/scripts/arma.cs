@@ -8,7 +8,7 @@ public class arma : MonoBehaviour
     public float velocidadAtaque = 8f;
     public float anguloAtaque = 120f;
 
-    // 🔥 AVANCE AL GOLPEAR
+    // AVANCE AL GOLPEAR
     public float avanceAtaque = 3f;
 
     [Header("Daño")]
@@ -53,7 +53,9 @@ public class arma : MonoBehaviour
     public float tiempoEntreAtaques = 0.5f;
 
     public bool atacando = false;
+
     private bool regresando = false;
+    private bool esperandoRegreso = false;
 
     private float progreso = 0f;
     private float cooldown = 0f;
@@ -125,8 +127,12 @@ public class arma : MonoBehaviour
         HabilidadBuff();
         UltimateDash();
 
+        // =========================
+        // PRIMER GOLPE
+        // =========================
         if (Input.GetMouseButtonDown(0)
             && !atacando
+            && !esperandoRegreso
             && cooldown <= 0)
         {
             atacando = true;
@@ -149,6 +155,18 @@ public class arma : MonoBehaviour
             col.enabled = true;
         }
 
+        // =========================
+        // SEGUNDO CLICK = REGRESAR
+        // =========================
+        if (Input.GetMouseButtonDown(0)
+            && esperandoRegreso
+            && !atacando)
+        {
+            atacando = true;
+            regresando = true;
+            progreso = 0f;
+        }
+
         if (atacando)
             AnimarAtaque();
     }
@@ -158,13 +176,16 @@ public class arma : MonoBehaviour
         progreso +=
             Time.deltaTime * velocidadAtaque;
 
-        // AVANZAR AL ATACAR
+        // AVANZAR EN CADA GOLPE
         controller.Move(
             direccionAtaque.normalized *
             avanceAtaque *
             Time.deltaTime
         );
 
+        // =========================
+        // GOLPE DE IDA
+        // =========================
         if (!regresando)
         {
             transform.localRotation =
@@ -174,12 +195,21 @@ public class arma : MonoBehaviour
                     progreso
                 );
 
+            // TERMINÓ GOLPE
             if (progreso >= 1f)
             {
-                progreso = 0f;
-                regresando = true;
+                atacando = false;
+
+                esperandoRegreso = true;
+
+                transform.localRotation =
+                    rotacionObjetivo;
             }
         }
+
+        // =========================
+        // REGRESAR
+        // =========================
         else
         {
             transform.localRotation =
@@ -192,6 +222,8 @@ public class arma : MonoBehaviour
             if (progreso >= 1f)
             {
                 atacando = false;
+
+                esperandoRegreso = false;
 
                 transform.localRotation =
                     rotacionInicial;

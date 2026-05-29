@@ -202,7 +202,7 @@ public class datosJugador : MonoBehaviour
         }
     }
 
-    void ActualizarUI()
+    public void ActualizarUI()
     {
         // VIDA
         if (vidaSlider != null)

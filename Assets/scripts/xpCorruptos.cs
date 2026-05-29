@@ -46,6 +46,8 @@ public class xpCorruptos : MonoBehaviour
             {
                 // Suma corrupción
                 datos.corrupcion += corrupcionQueDa;
+                datos.ActualizarUI();
+                
             }
 
             // Destruye la orbe

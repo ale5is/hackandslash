@@ -1,7 +1,7 @@
 using UnityEngine;
 
 [RequireComponent(typeof(CharacterController))]
-public class movimiento  : MonoBehaviour
+public class movimiento : MonoBehaviour
 {
     [Header("Movimiento")]
     public float velocidad = 6f;
@@ -14,156 +14,244 @@ public class movimiento  : MonoBehaviour
     public float cooldownDash = 1f;
 
     private CharacterController controller;
+
     private Vector3 velocidadVertical;
     private Vector3 direccionMovimiento;
+    private Vector3 movimientoFinal;
 
     private bool haciendoDash = false;
+
     private float tiempoDash;
     private float cooldownActual;
+
     private arma atacar;
 
-    [HideInInspector] public Transform objetivoLock;
+    private Camera cam;
+
+    [HideInInspector]
+    public Transform objetivoLock;
+
     void Start()
     {
         controller = GetComponent<CharacterController>();
+
         atacar = GetComponent<arma>();
+
+        cam = Camera.main;
     }
 
     void Update()
     {
+        // SEGURIDAD
+        if (cam == null)
+        {
+            cam = Camera.main;
+
+            if (cam == null) return;
+        }
+
+        // RESET MOVIMIENTO
+        movimientoFinal = Vector3.zero;
+
+        // MOVIMIENTO
         Mover();
+
+        // GRAVEDAD
         AplicarGravedad();
+
+        // DASH
         Dash();
+
+        // APLICAR TODO JUNTO
+        controller.Move(movimientoFinal * Time.deltaTime);
     }
 
     void Mover()
     {
+        // NO MOVER DURANTE DASH
         if (haciendoDash) return;
 
-        float horizontal = Input.GetAxisRaw("Horizontal");
-        float vertical = Input.GetAxisRaw("Vertical");
+        float horizontal =
+            Input.GetAxisRaw("Horizontal");
 
-        Vector3 input = new Vector3(horizontal, 0, vertical).normalized;
+        float vertical =
+            Input.GetAxisRaw("Vertical");
 
-        if (input.magnitude < 0.1f) return;
+        Vector3 input =
+            new Vector3(horizontal, 0f, vertical);
 
         // ===== LOCK ON =====
         if (objetivoLock != null)
         {
-            // Mirar enemigo
+            // SI EL OBJETIVO SE DESTRUYÓ
+            if (!objetivoLock.gameObject.activeInHierarchy)
+            {
+                objetivoLock = null;
+                return;
+            }
+
+            // MIRAR ENEMIGO
             Vector3 direccionEnemigo =
-                objetivoLock.position - transform.position;
+                objetivoLock.position -
+                transform.position;
 
-            direccionEnemigo.y = 0;
+            direccionEnemigo.y = 0f;
 
-            transform.rotation = Quaternion.Slerp(
-                transform.rotation,
-                Quaternion.LookRotation(direccionEnemigo),
-                velocidadRotacion * Time.deltaTime
-            );
+            if (direccionEnemigo.sqrMagnitude > 0.01f)
+            {
+                Quaternion rotacionObjetivo =
+                    Quaternion.LookRotation(
+                        direccionEnemigo
+                    );
 
-            // Dirección desde cámara
-            Camera cam = Camera.main;
+                transform.rotation =
+                    Quaternion.Slerp(
+                        transform.rotation,
+                        rotacionObjetivo,
+                        velocidadRotacion *
+                        Time.deltaTime
+                    );
+            }
 
-            Vector3 camForward = cam.transform.forward;
-            Vector3 camRight = cam.transform.right;
+            // DIRECCIÓN RELATIVA A CÁMARA
+            Vector3 camForward =
+                cam.transform.forward;
 
-            camForward.y = 0;
-            camRight.y = 0;
+            Vector3 camRight =
+                cam.transform.right;
+
+            camForward.y = 0f;
+            camRight.y = 0f;
 
             camForward.Normalize();
             camRight.Normalize();
 
-            // Movimiento relativo cámara
             direccionMovimiento =
-                (camForward * vertical + camRight * horizontal).normalized;
+                (
+                    camForward * vertical +
+                    camRight * horizontal
+                ).normalized;
 
-            // Mover personaje
-            controller.Move(
-                direccionMovimiento * velocidad * Time.deltaTime
-            );
+            movimientoFinal +=
+                direccionMovimiento *
+                velocidad;
         }
         else
         {
             // ===== MOVIMIENTO NORMAL =====
 
-            Camera cam = Camera.main;
+            Vector3 forward =
+                cam.transform.forward;
 
-            Vector3 forward = cam.transform.forward;
-            Vector3 right = cam.transform.right;
+            Vector3 right =
+                cam.transform.right;
 
-            forward.y = 0;
-            right.y = 0;
+            forward.y = 0f;
+            right.y = 0f;
 
             forward.Normalize();
             right.Normalize();
 
             direccionMovimiento =
-                forward * vertical + right * horizontal;
+                (
+                    forward * vertical +
+                    right * horizontal
+                ).normalized;
 
-            controller.Move(
-                direccionMovimiento.normalized *
-                velocidad *
-                Time.deltaTime
-            );
+            movimientoFinal +=
+                direccionMovimiento *
+                velocidad;
 
-            Quaternion rotacionObjetivo =
-                Quaternion.LookRotation(direccionMovimiento);
+            // ROTAR SOLO SI HAY DIRECCIÓN
+            if (direccionMovimiento.sqrMagnitude > 0.01f)
+            {
+                Quaternion rotacionObjetivo =
+                    Quaternion.LookRotation(
+                        direccionMovimiento
+                    );
 
-            transform.rotation = Quaternion.Slerp(
-                transform.rotation,
-                rotacionObjetivo,
-                velocidadRotacion * Time.deltaTime
-            );
+                transform.rotation =
+                    Quaternion.Slerp(
+                        transform.rotation,
+                        rotacionObjetivo,
+                        velocidadRotacion *
+                        Time.deltaTime
+                    );
+            }
         }
     }
 
     void AplicarGravedad()
     {
-        if (controller.isGrounded && velocidadVertical.y < 0)
+        // PEGAR AL PISO
+        if (
+            controller.isGrounded &&
+            velocidadVertical.y < 0f
+        )
         {
             velocidadVertical.y = -2f;
         }
 
-        velocidadVertical.y += gravedad * Time.deltaTime;
-        controller.Move(velocidadVertical * Time.deltaTime);
+        // GRAVEDAD
+        velocidadVertical.y +=
+            gravedad * Time.deltaTime;
+
+        movimientoFinal += velocidadVertical;
     }
 
     void Dash()
     {
-        if (!atacar.atacando)
+        // SEGURIDAD
+        if (atacar == null) return;
+
+        // COOLDOWN
+        if (cooldownActual > 0f)
         {
             cooldownActual -= Time.deltaTime;
 
-            // INICIAR DASH
-            if (Input.GetKeyDown(KeyCode.Space) && cooldownActual <= 0)
+            if (cooldownActual < 0f)
             {
-                haciendoDash = true;
-                tiempoDash = duracionDash;
-                cooldownActual = cooldownDash;
+                cooldownActual = 0f;
+            }
+        }
 
-                // Si no se mueve, dash hacia adelante
-                if (direccionMovimiento.magnitude < 0.1f)
-                {
-                    direccionMovimiento = transform.forward;
-                }
+        // NO DASH DURANTE ATAQUE
+        if (atacar.atacando) return;
+
+        // INICIAR DASH
+        if (
+            Input.GetKeyDown(KeyCode.Space) &&
+            cooldownActual <= 0f
+        )
+        {
+            haciendoDash = true;
+
+            tiempoDash = duracionDash;
+
+            cooldownActual = cooldownDash;
+
+            // SI ESTÁ QUIETO
+            if (direccionMovimiento.sqrMagnitude < 0.01f)
+            {
+                direccionMovimiento =
+                    -transform.forward;
             }
 
-            // HACER DASH
-            if (haciendoDash)
+            direccionMovimiento.Normalize();
+        }
+
+        // HACER DASH
+        if (haciendoDash)
+        {
+            movimientoFinal +=
+                direccionMovimiento *
+                fuerzaDash;
+
+            tiempoDash -= Time.deltaTime;
+
+            if (tiempoDash <= 0f)
             {
-                controller.Move(
-                    direccionMovimiento.normalized *
-                    fuerzaDash *
-                    Time.deltaTime
-                );
-
-                tiempoDash -= Time.deltaTime;
-
-                if (tiempoDash <= 0)
-                {
-                    haciendoDash = false;
-                }
+                haciendoDash = false;
             }
         }
     }
