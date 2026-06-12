@@ -24,7 +24,7 @@ public class movimiento : MonoBehaviour
     private float tiempoDash;
     private float cooldownActual;
 
-    private arma atacar;
+    public arma atacar;
 
     private Camera cam;
 
@@ -34,8 +34,6 @@ public class movimiento : MonoBehaviour
     void Start()
     {
         controller = GetComponent<CharacterController>();
-
-        atacar = GetComponent<arma>();
 
         cam = Camera.main;
     }
@@ -68,6 +66,10 @@ public class movimiento : MonoBehaviour
 
     void Mover()
     {
+        // NO MOVER DURANTE ATAQUE
+        if (atacar != null && atacar.atacando)
+            return;
+
         // NO MOVER DURANTE DASH
         if (haciendoDash) return;
 

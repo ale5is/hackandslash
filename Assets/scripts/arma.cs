@@ -7,115 +7,86 @@ public class arma : MonoBehaviour
     [Header("Ataque")]
     public float velocidadAtaque = 8f;
     public float anguloAtaque = 120f;
-
-    // AVANCE AL GOLPEAR
     public float avanceAtaque = 3f;
+    public float tiempoEntreAtaques = 0.5f;
 
     [Header("Daño")]
     public int dañoBase = 10;
     public int dañoActual = 10;
 
-    [Header("Habilidad Buff")]
+    [Header("Buff")]
+    public KeyCode teclaBuff = KeyCode.Q;
     public float multiplicadorDaño = 2f;
     public float duracionBuff = 5f;
-    public KeyCode teclaBuff = KeyCode.Q;
 
-    private bool buffActivo = false;
-    private float tiempoBuff;
-
-    [Header("Ultimate Cargable")]
+    [Header("Ultimate")]
+    public KeyCode teclaUlti = KeyCode.R;
     public float fuerzaUlti = 25f;
     public float duracionUlti = 0.2f;
-    public KeyCode teclaUlti = KeyCode.R;
-
-    public Slider sliderUlti;
-    public TMP_Text porcentajeTexto;
-
     public float tiempoMaxCarga = 2f;
-
     public float dañoMinUlti = 20f;
     public float dañoMaxUlti = 100f;
 
-    private bool cargandoUlti = false;
-    private float tiempoCarga = 0f;
+    [Header("UI")]
+    public Slider sliderUlti;
+    public TMP_Text porcentajeTexto;
 
-    private float dañoUltiActual;
-
-    private bool usandoUlti = false;
-    private float tiempoUlti;
-
-    private CharacterController controller;
-    private movimiento movimientoJugador;
-
-    private Vector3 direccionAtaque;
-
-    [Header("Cooldown")]
-    public float tiempoEntreAtaques = 0.5f;
-
-    public bool atacando = false;
-
-    private bool regresando = false;
-    private bool esperandoRegreso = false;
-
-    private float progreso = 0f;
-    private float cooldown = 0f;
-
-    private Quaternion rotacionInicial;
-    private Quaternion rotacionObjetivo;
-
-    public Collider col;
-    public Renderer armaRenderer;
-
-    // =========================
-    // ZOOM ULTI
-    // =========================
-    [Header("Zoom Ulti")]
+    [Header("Zoom")]
     public float fovNormal = 60f;
     public float fovUlti = 40f;
     public float velocidadZoom = 10f;
 
-    private Camera cam;
+    public Collider col;
+    public Renderer armaRenderer;
 
-    // =========================
-    // CÁMARA SCRIPT
-    // =========================
-    private camara scriptCamara;
+    CharacterController controller;
+    movimiento movimientoJugador;
+    camara scriptCamara;
+    Camera cam;
+
+    bool buffActivo;
+    float tiempoBuff;
+
+    bool cargandoUlti;
+    bool usandoUlti;
+    float tiempoCarga;
+    float tiempoUlti;
+    float dañoUltiActual;
+
+    public bool atacando;
+    bool regresando;
+    bool esperandoRegreso;
+
+    float progreso;
+    float cooldown;
+
+    Vector3 direccionAtaque;
+
+    Quaternion rotInicial;
+    Quaternion rotFinal;
 
     void Start()
     {
-        controller =
-            GetComponentInParent<CharacterController>();
-
-        movimientoJugador =
-            GetComponentInParent<movimiento>();
+        controller = GetComponentInParent<CharacterController>();
+        movimientoJugador = GetComponentInParent<movimiento>();
 
         dañoActual = dañoBase;
-
         col.enabled = false;
 
-        // EMISSION APAGADO
         armaRenderer.material.DisableKeyword("_EMISSION");
 
-        // CONFIG SLIDER
         sliderUlti.gameObject.SetActive(false);
+        porcentajeTexto.gameObject.SetActive(false);
 
         sliderUlti.minValue = 0;
         sliderUlti.maxValue = tiempoMaxCarga;
-        sliderUlti.value = 0;
 
-        // TEXTO %
-        porcentajeTexto.gameObject.SetActive(false);
-
-        // CÁMARA
         cam = Camera.main;
 
-        if (cam != null)
+        if (cam)
         {
             cam.fieldOfView = fovNormal;
-
-            // OBTENER SCRIPT CÁMARA
-            scriptCamara =
-                cam.GetComponent<camara>();
+            scriptCamara = cam.GetComponent<camara>();
         }
     }
 
@@ -124,179 +95,136 @@ public class arma : MonoBehaviour
         if (cooldown > 0)
             cooldown -= Time.deltaTime;
 
-        HabilidadBuff();
-        UltimateDash();
-
-        // =========================
-        // PRIMER GOLPE
-        // =========================
-        if (Input.GetMouseButtonDown(0)
-            && !atacando
-            && !esperandoRegreso
-            && cooldown <= 0)
-        {
-            atacando = true;
-            regresando = false;
-            progreso = 0f;
-
-            cooldown = tiempoEntreAtaques;
-
-            // GUARDAR DIRECCIÓN
-            direccionAtaque =
-                movimientoJugador.transform.forward;
-
-            rotacionInicial =
-                transform.localRotation;
-
-            rotacionObjetivo =
-                rotacionInicial *
-                Quaternion.Euler(0, anguloAtaque, 0);
-
-            col.enabled = true;
-        }
-
-        // =========================
-        // SEGUNDO CLICK = REGRESAR
-        // =========================
-        if (Input.GetMouseButtonDown(0)
-            && esperandoRegreso
-            && !atacando)
-        {
-            atacando = true;
-            regresando = true;
-            progreso = 0f;
-        }
-
-        if (atacando)
-            AnimarAtaque();
+        Ataque();
+        Buff();
+        Ultimate();
     }
 
-    void AnimarAtaque()
+    void Ataque()
     {
-        progreso +=
-            Time.deltaTime * velocidadAtaque;
+        if (Input.GetMouseButtonDown(0))
+        {
+            // Golpe de ida
+            if (!atacando && !esperandoRegreso && cooldown <= 0)
+            {
+                atacando = true;
+                regresando = false;
+                progreso = 0;
 
-        // AVANZAR EN CADA GOLPE
+                cooldown = tiempoEntreAtaques;
+
+                rotInicial = Quaternion.identity;
+                rotFinal = Quaternion.Euler(0, anguloAtaque, 0);
+
+                col.enabled = true;
+            }
+            // Golpe de vuelta
+            else if (!atacando && esperandoRegreso)
+            {
+                atacando = true;
+                regresando = true;
+                progreso = 0;
+
+                col.enabled = true;
+            }
+        }
+
+        if (!atacando)
+            return;
+
+        progreso += Time.deltaTime * velocidadAtaque;
+
+        // Avanza siempre hacia donde mira el jugador
         controller.Move(
-            direccionAtaque.normalized *
+            movimientoJugador.transform.forward *
             avanceAtaque *
             Time.deltaTime
         );
 
-        // =========================
-        // GOLPE DE IDA
-        // =========================
+        // Ida
         if (!regresando)
         {
             transform.localRotation =
-                Quaternion.Slerp(
-                    rotacionInicial,
-                    rotacionObjetivo,
-                    progreso
-                );
+                Quaternion.Slerp(rotInicial, rotFinal, progreso);
 
-            // TERMINÓ GOLPE
             if (progreso >= 1f)
             {
                 atacando = false;
-
                 esperandoRegreso = true;
 
-                transform.localRotation =
-                    rotacionObjetivo;
+                transform.localRotation = rotFinal;
+
+                col.enabled = false;
             }
         }
-
-        // =========================
-        // REGRESAR
-        // =========================
+        // Vuelta
         else
         {
             transform.localRotation =
-                Quaternion.Slerp(
-                    rotacionObjetivo,
-                    rotacionInicial,
-                    progreso
-                );
+                Quaternion.Slerp(rotFinal, rotInicial, progreso);
 
             if (progreso >= 1f)
             {
                 atacando = false;
-
                 esperandoRegreso = false;
 
-                transform.localRotation =
-                    rotacionInicial;
+                transform.localRotation = Quaternion.identity;
 
                 col.enabled = false;
             }
         }
     }
 
-    // =========================
-    // BUFF DE DAÑO
-    // =========================
-    void HabilidadBuff()
+    void Buff()
     {
-        if (Input.GetKeyDown(teclaBuff)
-            && !buffActivo)
+        if (Input.GetKeyDown(teclaBuff) && !buffActivo)
         {
-            // ACTIVAR EMISSION
-            armaRenderer.material.EnableKeyword("_EMISSION");
-
             buffActivo = true;
             tiempoBuff = duracionBuff;
 
-            dañoActual = Mathf.RoundToInt(
-                dañoBase *
-                multiplicadorDaño
-            );
+            dañoActual =
+                Mathf.RoundToInt(dañoBase * multiplicadorDaño);
 
-            Debug.Log("BUFF ACTIVADO");
+            armaRenderer.material.EnableKeyword("_EMISSION");
         }
 
-        if (buffActivo)
+        if (!buffActivo) return;
+
+        tiempoBuff -= Time.deltaTime;
+
+        if (tiempoBuff <= 0)
         {
-            tiempoBuff -= Time.deltaTime;
+            buffActivo = false;
+            dañoActual = dañoBase;
 
-            if (tiempoBuff <= 0)
-            {
-                // APAGAR EMISSION
-                armaRenderer.material.DisableKeyword("_EMISSION");
-
-                buffActivo = false;
-
-                dañoActual = dañoBase;
-
-                Debug.Log("BUFF TERMINADO");
-            }
+            armaRenderer.material.DisableKeyword("_EMISSION");
         }
     }
 
-    // =========================
-    // ULTIMATE CARGABLE
-    // =========================
-    void UltimateDash()
+    void Ultimate()
     {
-        // EMPEZAR CARGA
         if (Input.GetKeyDown(teclaUlti))
         {
             cargandoUlti = true;
-
-            tiempoCarga = 0f;
+            tiempoCarga = 0;
 
             sliderUlti.gameObject.SetActive(true);
-
             porcentajeTexto.gameObject.SetActive(true);
         }
 
-        // CARGANDO
         if (cargandoUlti)
         {
             tiempoCarga += Time.deltaTime;
+            tiempoCarga = Mathf.Clamp(tiempoCarga, 0, tiempoMaxCarga);
 
-            // ZOOM MIENTRAS CARGA
-            if (cam != null)
+            sliderUlti.value = tiempoCarga;
+
+            porcentajeTexto.text =
+                Mathf.RoundToInt(
+                    tiempoCarga / tiempoMaxCarga * 100
+                ) + "%";
+
+            if (cam)
             {
                 cam.fieldOfView = Mathf.Lerp(
                     cam.fieldOfView,
@@ -304,55 +232,27 @@ public class arma : MonoBehaviour
                     velocidadZoom * Time.deltaTime
                 );
             }
-
-            // LIMITAR
-            if (tiempoCarga > tiempoMaxCarga)
-                tiempoCarga = tiempoMaxCarga;
-
-            // ACTUALIZAR SLIDER
-            sliderUlti.value = tiempoCarga;
-
-            // PORCENTAJE
-            int porcentajeUI =
-                Mathf.RoundToInt(
-                    (tiempoCarga / tiempoMaxCarga) * 100
-                );
-
-            porcentajeTexto.text =
-                porcentajeUI + "%";
         }
-        else
+        else if (cam)
         {
-            // VOLVER AL FOV NORMAL
-            if (cam != null)
-            {
-                cam.fieldOfView = Mathf.Lerp(
-                    cam.fieldOfView,
-                    fovNormal,
-                    velocidadZoom * Time.deltaTime
-                );
-            }
+            cam.fieldOfView = Mathf.Lerp(
+                cam.fieldOfView,
+                fovNormal,
+                velocidadZoom * Time.deltaTime
+            );
         }
 
-        // SOLTAR BOTÓN
-        if (Input.GetKeyUp(teclaUlti)
-            && cargandoUlti)
+        if (Input.GetKeyUp(teclaUlti) && cargandoUlti)
         {
             cargandoUlti = false;
 
-            // DESACTIVAR LOCK ON
-            if (scriptCamara != null)
-            {
-                scriptCamara.DesactivarLock();
-            }
-
             sliderUlti.gameObject.SetActive(false);
-
             porcentajeTexto.gameObject.SetActive(false);
 
-            // CALCULAR DAÑO
-            float porcentaje =
-                tiempoCarga / tiempoMaxCarga;
+            if (scriptCamara)
+                scriptCamara.DesactivarLock();
+
+            float porcentaje = tiempoCarga / tiempoMaxCarga;
 
             dañoUltiActual = Mathf.Lerp(
                 dañoMinUlti,
@@ -362,36 +262,23 @@ public class arma : MonoBehaviour
 
             usandoUlti = true;
             tiempoUlti = duracionUlti;
-
-            Debug.Log(
-                "Daño Ulti: " +
-                dañoUltiActual
-            );
         }
 
-        // HACER DASH
-        if (usandoUlti)
-        {
-            Vector3 direccion =
-                cam.transform.forward;
+        if (!usandoUlti) return;
 
-            // IGNORAR ALTURA
-            direccion.y = 0;
+        Vector3 dir = cam.transform.forward;
+        dir.y = 0;
+        dir.Normalize();
 
-            direccion.Normalize();
+        controller.Move(
+            dir *
+            fuerzaUlti *
+            Time.deltaTime
+        );
 
-            controller.Move(
-                direccion *
-                fuerzaUlti *
-                Time.deltaTime
-            );
+        tiempoUlti -= Time.deltaTime;
 
-            tiempoUlti -= Time.deltaTime;
-
-            if (tiempoUlti <= 0)
-            {
-                usandoUlti = false;
-            }
-        }
+        if (tiempoUlti <= 0)
+            usandoUlti = false;
     }
 }
