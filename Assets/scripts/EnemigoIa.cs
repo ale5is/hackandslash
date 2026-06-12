@@ -420,15 +420,13 @@ public class EnemigoIa : MonoBehaviour
 
     void Morir()
     {
-        // ORBES
         for (int i = 0; i < cantidadOrbes; i++)
         {
-            Vector3 randomOffset =
-                new Vector3(
-                    Random.Range(-1f, 1f),
-                    0.5f,
-                    Random.Range(-1f, 1f)
-                );
+            Vector3 randomOffset = new Vector3(
+                Random.Range(-1f, 1f),
+                0.5f,
+                Random.Range(-1f, 1f)
+            );
 
             Instantiate(
                 orbeXpPrefab,
@@ -437,6 +435,13 @@ public class EnemigoIa : MonoBehaviour
             );
         }
 
-        Destroy(gameObject);
+        vida = 0;
+        enabled = false;
+
+        transform.rotation = Quaternion.Euler(
+            90f,
+            transform.eulerAngles.y,
+            0f
+        );
     }
 }
