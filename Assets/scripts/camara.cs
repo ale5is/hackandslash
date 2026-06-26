@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class camara : MonoBehaviour
 {
@@ -9,39 +9,38 @@ public class camara : MonoBehaviour
     public string tagEnemigo = "Enemy";
     public float rangoBusqueda = 15f;
 
+    public float distanciaMinimaLock = 2.5f; // 🔴 se suelta
+    public float distanciaReLock = 4f;        // 🟢 vuelve a fijar
+
     private Transform enemigoFijado;
+    private Transform enemigoGuardado;
 
-    [Header("Distancia")]
+    [Header("Cámara")]
     public Vector3 offset = new Vector3(0, 6, -8);
-
-    [Header("Zoom autom�tico cerca de paredes")]
-    public float distanciaMinimaCamara = 2f;
-    public LayerMask capasColision;
-
-    [Header("Suavizado")]
     public float suavizado = 8f;
-
-    [Header("Rotaci�n")]
     public float sensibilidadMouse = 3f;
 
-    [Header("L�mites Verticales")]
+    [Header("Colisión")]
+    public LayerMask capasColision;
+    public float distanciaMinimaCamara = 2f;
+
+    [Header("Rotación")]
     public float minY = -20f;
     public float maxY = 70f;
 
-    private float rotacionX;
-    private float rotacionY;
+    float rotX;
+    float rotY;
 
-    private Vector3 posicionInicial;
-    private Quaternion rotacionInicial;
+    Vector3 posicionInicial;
+    Quaternion rotacionInicial;
 
     void Start()
     {
         Cursor.lockState = CursorLockMode.Locked;
 
-        Vector3 angulos = transform.eulerAngles;
-
-        rotacionX = angulos.y;
-        rotacionY = angulos.x;
+        Vector3 euler = transform.eulerAngles;
+        rotX = euler.y;
+        rotY = euler.x;
 
         posicionInicial = transform.position;
         rotacionInicial = transform.rotation;
@@ -49,181 +48,176 @@ public class camara : MonoBehaviour
 
     void LateUpdate()
     {
-        if (jugador == null) return;
+        if (!jugador) return;
 
-        // CLICK RUEDA MOUSE
         if (Input.GetMouseButtonDown(2))
-        {
-            if (enemigoFijado == null)
-            {
-                BuscarEnemigo();
-            }
-            else
-            {
-                DesactivarLock();
-            }
-        }
+            ToggleLock();
 
-        // =========================
-        // LOCK ON
-        // =========================
+        AutoLockSystem();
+
+        if (enemigoFijado)
+            CamaraLock();
+        else
+            CamaraLibre();
+    }
+
+    // =========================
+    // 🔥 AUTO LOCK (HISTERESIS)
+    // =========================
+    void AutoLockSystem()
+    {
+        // 🔴 si hay lock activo
         if (enemigoFijado != null)
         {
-            Vector3 direccion =
-                (jugador.position - enemigoFijado.position).normalized;
+            float dist = Vector3.Distance(jugador.position, enemigoFijado.position);
 
-            direccion.y = 0;
-
-            Vector3 dirJugador =
-                enemigoFijado.position - jugador.position;
-
-            dirJugador.y = 0;
-
-            if (dirJugador != Vector3.zero)
+            // demasiado cerca → se suelta
+            if (dist <= distanciaMinimaLock)
             {
-                Quaternion rotJugador =
-                    Quaternion.LookRotation(dirJugador);
-
-                jugador.rotation = Quaternion.Slerp(
-                    jugador.rotation,
-                    rotJugador,
-                    10f * Time.deltaTime
-                );
+                enemigoFijado = null;
+                return;
             }
 
-            Vector3 posicionDeseada =
-                jugador.position +
-                direccion * Mathf.Abs(offset.z) +
-                Vector3.up * offset.y;
-
-            posicionDeseada =
-                AjustarCamaraConColision(posicionDeseada);
-
-            transform.position = Vector3.Lerp(
-                transform.position,
-                posicionDeseada,
-                suavizado * Time.deltaTime
-            );
-
-            Vector3 puntoMedio =
-                (jugador.position + enemigoFijado.position) / 2f;
-
-            transform.LookAt(
-                puntoMedio + Vector3.up * 1.5f
-            );
+            return;
         }
-        else
+
+        // 🟢 si no hay lock, intenta re-fijar
+        if (enemigoGuardado != null)
         {
-            // =========================
-            // C�MARA NORMAL
-            // =========================
+            float dist = Vector3.Distance(jugador.position, enemigoGuardado.position);
 
-            rotacionX += Input.GetAxis("Mouse X") * sensibilidadMouse;
-            rotacionY -= Input.GetAxis("Mouse Y") * sensibilidadMouse;
-
-            rotacionY = Mathf.Clamp(rotacionY, minY, maxY);
-
-            Quaternion rotacion =
-                Quaternion.Euler(rotacionY, rotacionX, 0);
-
-            Vector3 posicionDeseada =
-                jugador.position + rotacion * offset;
-
-            posicionDeseada =
-                AjustarCamaraConColision(posicionDeseada);
-
-            transform.position = Vector3.Lerp(
-                transform.position,
-                posicionDeseada,
-                suavizado * Time.deltaTime
-            );
-
-            transform.LookAt(
-                jugador.position + Vector3.up * 1.5f
-            );
+            if (dist >= distanciaReLock && dist <= rangoBusqueda)
+            {
+                enemigoFijado = enemigoGuardado;
+            }
         }
     }
 
-    Vector3 AjustarCamaraConColision(Vector3 posicionDeseada)
+    // =========================
+    // 🔓 FREE CAMERA
+    // =========================
+    void CamaraLibre()
     {
-        Vector3 origen =
-            jugador.position + Vector3.up * 1.5f;
+        rotX += Input.GetAxis("Mouse X") * sensibilidadMouse;
+        rotY -= Input.GetAxis("Mouse Y") * sensibilidadMouse;
 
-        Vector3 direccion =
-            posicionDeseada - origen;
+        rotY = Mathf.Clamp(rotY, minY, maxY);
 
-        float distancia =
-            direccion.magnitude;
+        Quaternion rot = Quaternion.Euler(rotY, rotX, 0);
 
-        direccion.Normalize();
+        Vector3 pos = jugador.position + rot * offset;
+        pos = AjustarColision(pos);
 
-        RaycastHit hit;
+        transform.position = Vector3.Lerp(transform.position, pos, suavizado * Time.deltaTime);
+        transform.LookAt(jugador.position + Vector3.up * 1.5f);
+    }
 
-        if (Physics.Raycast(
-            origen,
-            direccion,
-            out hit,
-            distancia,
-            capasColision
-        ))
+    // =========================
+    // 🎯 LOCK CAMERA
+    // =========================
+    void CamaraLock()
+    {
+        if (!enemigoFijado) return;
+
+        float dist = Vector3.Distance(jugador.position, enemigoFijado.position);
+
+        Vector3 dir = enemigoFijado.position - jugador.position;
+        dir.y = 0;
+
+        if (dir != Vector3.zero)
         {
-            return hit.point -
-                   direccion * distanciaMinimaCamara;
+            Quaternion rot = Quaternion.LookRotation(dir);
+            jugador.rotation = Quaternion.Slerp(jugador.rotation, rot, 10f * Time.deltaTime);
         }
 
-        return posicionDeseada;
+        if (dist > distanciaMinimaLock)
+        {
+            Vector3 dirCam = (jugador.position - enemigoFijado.position).normalized;
+            dirCam.y = 0;
+
+            Vector3 pos = jugador.position + dirCam * Mathf.Abs(offset.z);
+            pos.y += offset.y;
+
+            pos = AjustarColision(pos);
+
+            transform.position = Vector3.Lerp(transform.position, pos, suavizado * Time.deltaTime);
+        }
+
+        Vector3 mid = (jugador.position + enemigoFijado.position) * 0.5f;
+        transform.LookAt(mid + Vector3.up * 1.5f);
+    }
+
+    // =========================
+    // 🔧 COLISIÓN
+    // =========================
+    Vector3 AjustarColision(Vector3 target)
+    {
+        Vector3 origin = jugador.position + Vector3.up * 1.5f;
+        Vector3 dir = target - origin;
+
+        float dist = dir.magnitude;
+        dir.Normalize();
+
+        if (Physics.Raycast(origin, dir, out RaycastHit hit, dist, capasColision))
+        {
+            float finalDist = Mathf.Clamp(
+                hit.distance - 0.2f,
+                distanciaMinimaCamara,
+                dist
+            );
+
+            return origin + dir * finalDist;
+        }
+
+        return target;
+    }
+
+    // =========================
+    // 🎯 SYSTEM
+    // =========================
+    void ToggleLock()
+    {
+        if (enemigoFijado == null)
+        {
+            BuscarEnemigo();
+            enemigoGuardado = enemigoFijado;
+        }
+        else
+        {
+            DesactivarLock();
+        }
     }
 
     void BuscarEnemigo()
     {
-        GameObject[] enemigos =
-            GameObject.FindGameObjectsWithTag(tagEnemigo);
+        GameObject[] enemigos = GameObject.FindGameObjectsWithTag(tagEnemigo);
 
-        float distanciaMinima = Mathf.Infinity;
+        float bestDist = Mathf.Infinity;
+        Transform best = null;
 
-        Transform mejorObjetivo = null;
-
-        foreach (GameObject enemigo in enemigos)
+        foreach (var e in enemigos)
         {
-            float distancia = Vector3.Distance(
-                jugador.position,
-                enemigo.transform.position
-            );
+            float d = Vector3.Distance(jugador.position, e.transform.position);
 
-            if (distancia < distanciaMinima &&
-                distancia <= rangoBusqueda)
+            if (d < bestDist && d <= rangoBusqueda)
             {
-                distanciaMinima = distancia;
-                mejorObjetivo = enemigo.transform;
+                bestDist = d;
+                best = e.transform;
             }
         }
 
-        enemigoFijado = mejorObjetivo;
+        enemigoFijado = best;
 
-        if (enemigoFijado != null)
-        {
-            jugador.GetComponent<movimiento>().objetivoLock =
-                enemigoFijado;
-        }
+        var mov = jugador.GetComponent<MovPersonaje>();
+        if (mov) mov.objetivoLock = enemigoFijado;
     }
 
-    // =========================
-    // DESACTIVAR LOCK
-    // =========================
     public void DesactivarLock()
     {
         enemigoFijado = null;
 
-        if (jugador != null)
-        {
-            movimiento mov =
-                jugador.GetComponent<movimiento>();
-
-            if (mov != null)
-            {
-                mov.objetivoLock = null;
-            }
-        }
+        var mov = jugador.GetComponent<MovPersonaje>();
+        if (mov) mov.objetivoLock = null;
     }
 
     public void ResetearCamara()
@@ -231,10 +225,8 @@ public class camara : MonoBehaviour
         transform.position = posicionInicial;
         transform.rotation = rotacionInicial;
 
-        Vector3 angulos =
-            rotacionInicial.eulerAngles;
-
-        rotacionX = angulos.y;
-        rotacionY = angulos.x;
+        Vector3 e = rotacionInicial.eulerAngles;
+        rotX = e.y;
+        rotY = e.x;
     }
 }

@@ -468,7 +468,7 @@ CharacterController:
   m_Enabled: 1
   serializedVersion: 3
   m_Height: 1.5
-  m_Radius: 0.5
+  m_Radius: 0.23
   m_SlopeLimit: 45
   m_StepOffset: 0.3
   m_SkinWidth: 0.08
@@ -494,6 +494,36 @@ MonoBehaviour:
   cooldownDash: 1
   animator: {fileID: 297162162}
   objetivoLock: {fileID: 0}
+--- !u!114 &297162167
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 297162161}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8e6429f918e56d14e84537023eb5defb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  vidaMax: 100
+  vida: 100
+  magiaMax: 100
+  magia: 0
+  corrupcion: 0
+  corrupcionPorNivel: 100
+  nivel: 10
+  nivelMaximo: 10
+  "da\xF1oEnemigo": 10
+  tiempoInvulnerable: 1
+  postProcessVolume: {fileID: 1175591531}
+  intensidadMaxima: 0.6
+  vidaSlider: {fileID: 1044181267}
+  magiaSlider: {fileID: 54902669}
+  vidaTexto: {fileID: 493009520}
+  magiaTexto: {fileID: 1114427187}
+  corrupcionTexto: {fileID: 660084331}
+  nivelTexto: {fileID: 1236420642}
 --- !u!1 &377366668
 GameObject:
   m_ObjectHideFlags: 0
@@ -882,6 +912,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 8189980434977739222, guid: 2dfbb63c9cdf7504faf4ff26b0581598, type: 3}
       insertIndex: -1
       addedObject: {fileID: 297162166}
+    - targetCorrespondingSourceObject: {fileID: 8189980434977739222, guid: 2dfbb63c9cdf7504faf4ff26b0581598, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 297162167}
   m_SourcePrefab: {fileID: 100100000, guid: 2dfbb63c9cdf7504faf4ff26b0581598, type: 3}
 --- !u!1 &493009518
 GameObject:
@@ -1928,13 +1961,15 @@ MonoBehaviour:
   jugador: {fileID: 297162163}
   tagEnemigo: enemigo
   rangoBusqueda: 15
-  offset: {x: 0, y: 6, z: -8}
-  distanciaMinimaCamara: 1
+  distanciaMinimaLock: 2
+  distanciaReLock: 8
+  offset: {x: 0, y: 6, z: -6}
+  suavizado: 8
+  sensibilidadMouse: 3
   capasColision:
     serializedVersion: 2
     m_Bits: 8
-  suavizado: 8
-  sensibilidadMouse: 3
+  distanciaMinimaCamara: 1
   minY: -30
   maxY: 10
 --- !u!114 &963194230
