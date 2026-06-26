@@ -492,6 +492,10 @@ MonoBehaviour:
   fuerzaDash: 40
   duracionDash: 0.2
   cooldownDash: 1
+  impulsoAtaque: 6
+  duracionImpulso: 0.3
+  impulsoEspecial: 40
+  duracionImpulsoEspecial: 0.3
   animator: {fileID: 297162162}
   objetivoLock: {fileID: 0}
 --- !u!114 &297162167
