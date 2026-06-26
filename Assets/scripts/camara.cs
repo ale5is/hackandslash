@@ -10,10 +10,12 @@ public class camara : MonoBehaviour
     public float rangoBusqueda = 15f;
 
     public float distanciaMinimaLock = 2.5f; // 🔴 se suelta
-    public float distanciaReLock = 4f;        // 🟢 vuelve a fijar
+    public float distanciaReLock = 4f;       // 🟢 vuelve a fijar
 
     private Transform enemigoFijado;
     private Transform enemigoGuardado;
+
+    private bool lockActivo = false; // 🔥 control interno
 
     [Header("Cámara")]
     public Vector3 offset = new Vector3(0, 6, -8);
@@ -53,25 +55,43 @@ public class camara : MonoBehaviour
         if (Input.GetMouseButtonDown(2))
             ToggleLock();
 
-        AutoLockSystem();
+        if (lockActivo)
+            AutoLockSystem();
 
-        if (enemigoFijado)
+        if (enemigoFijado && lockActivo)
             CamaraLock();
         else
             CamaraLibre();
     }
 
     // =========================
-    // 🔥 AUTO LOCK (HISTERESIS)
+    // 🎯 TOGGLE (RUEDA)
+    // =========================
+    void ToggleLock()
+    {
+        if (!lockActivo)
+        {
+            BuscarEnemigo();
+            enemigoGuardado = enemigoFijado;
+            lockActivo = true;
+        }
+        else
+        {
+            DesactivarLock(); // 🔥 usa método compatible
+        }
+    }
+
+    // =========================
+    // 🔥 AUTO LOCK
     // =========================
     void AutoLockSystem()
     {
-        // 🔴 si hay lock activo
+        if (!lockActivo) return;
+
         if (enemigoFijado != null)
         {
             float dist = Vector3.Distance(jugador.position, enemigoFijado.position);
 
-            // demasiado cerca → se suelta
             if (dist <= distanciaMinimaLock)
             {
                 enemigoFijado = null;
@@ -81,7 +101,6 @@ public class camara : MonoBehaviour
             return;
         }
 
-        // 🟢 si no hay lock, intenta re-fijar
         if (enemigoGuardado != null)
         {
             float dist = Vector3.Distance(jugador.position, enemigoGuardado.position);
@@ -173,21 +192,21 @@ public class camara : MonoBehaviour
     }
 
     // =========================
-    // 🎯 SYSTEM
+    // 🎯 COMPATIBLE CON ARMAS
     // =========================
-    void ToggleLock()
+    public void DesactivarLock()
     {
-        if (enemigoFijado == null)
-        {
-            BuscarEnemigo();
-            enemigoGuardado = enemigoFijado;
-        }
-        else
-        {
-            DesactivarLock();
-        }
+        enemigoFijado = null;
+        enemigoGuardado = null;
+        lockActivo = false;
+
+        var mov = jugador.GetComponent<MovPersonaje>();
+        if (mov) mov.objetivoLock = null;
     }
 
+    // =========================
+    // 🎯 BUSCAR ENEMIGO
+    // =========================
     void BuscarEnemigo()
     {
         GameObject[] enemigos = GameObject.FindGameObjectsWithTag(tagEnemigo);
@@ -210,14 +229,6 @@ public class camara : MonoBehaviour
 
         var mov = jugador.GetComponent<MovPersonaje>();
         if (mov) mov.objetivoLock = enemigoFijado;
-    }
-
-    public void DesactivarLock()
-    {
-        enemigoFijado = null;
-
-        var mov = jugador.GetComponent<MovPersonaje>();
-        if (mov) mov.objetivoLock = null;
     }
 
     public void ResetearCamara()

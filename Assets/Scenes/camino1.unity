@@ -1961,7 +1961,7 @@ MonoBehaviour:
   jugador: {fileID: 297162163}
   tagEnemigo: enemigo
   rangoBusqueda: 15
-  distanciaMinimaLock: 2
+  distanciaMinimaLock: 3
   distanciaReLock: 8
   offset: {x: 0, y: 6, z: -6}
   suavizado: 8
